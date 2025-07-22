@@ -15,6 +15,7 @@
         <header class="header">
             <h1>📝 Digital Exam</h1>
             <div class="header-controls">
+                <button id="fullscreenBtn" class="btn btn-secondary">🔲 Fullscreen</button>
                 <button id="clearAll" class="btn btn-secondary">🗑️ Clear All</button>
                 <button id="saveExam" class="btn btn-primary">💾 Save Exam</button>
             </div>
@@ -86,6 +87,9 @@
             <!-- Add Page Button -->
             <button class="add-page-btn" id="addPageBtn">+ Add Another Page</button>
         </div>
+
+        <!-- Fullscreen Exit Hint -->
+        <div class="fullscreen-hint">Press ESC or hover top edge to exit fullscreen</div>
     </div>
 
     <!-- Scripts -->
@@ -93,5 +97,6 @@
     <script src="js/canvas.js"></script>
     <script src="js/flipbook.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/fullscreen.js"></script>
 </body>
 </html>
