@@ -28,34 +28,68 @@ class DrawingCanvas {
     }
 
     setupCanvas() {
-        // Set canvas size to match container
+        // Wait for container to be properly sized
         const rect = this.canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         
-        // Ensure minimum canvas size
-        const width = Math.max(rect.width, 300);
-        const height = Math.max(rect.height, 200);
+        // For mobile devices, ensure we have proper container dimensions
+        let width = rect.width;
+        let height = rect.height;
         
+        // If rect is 0 (common on mobile), use parent dimensions
+        if (width === 0 || height === 0) {
+            const parent = this.canvas.parentElement;
+            if (parent) {
+                const parentRect = parent.getBoundingClientRect();
+                width = parentRect.width || 300;
+                height = parentRect.height || 400;
+            }
+        }
+        
+        // Ensure minimum canvas size
+        width = Math.max(width, 300);
+        height = Math.max(height, 200);
+        
+        // Set actual canvas dimensions
         this.canvas.width = width * dpr;
         this.canvas.height = height * dpr;
         
-        // Only scale if canvas has valid dimensions
+        // Set CSS dimensions to match
+        this.canvas.style.width = width + 'px';
+        this.canvas.style.height = height + 'px';
+        
+        // Scale context for high DPI displays
         if (this.canvas.width > 0 && this.canvas.height > 0) {
             this.ctx.scale(dpr, dpr);
         }
-        
-        this.canvas.style.width = width + 'px';
-        this.canvas.style.height = height + 'px';
         
         // Set drawing properties
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
         this.ctx.imageSmoothingEnabled = true;
         
-        // Handle resize
+        // Mobile-specific optimizations
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
+        this.canvas.style.touchAction = 'none';
+        
+        // Handle resize with debouncing
+        this.resizeTimeout = null;
         window.addEventListener('resize', () => {
-            setTimeout(() => this.setupCanvas(), 100);
+            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => this.handleResize(), 200);
         });
+    }
+    
+    handleResize() {
+        // Preserve drawings during resize
+        const drawings = [...this.drawings];
+        this.setupCanvas();
+        if (drawings.length > 0) {
+            this.drawings = drawings;
+            this.redrawCanvas();
+        }
     }
 
     setupEventListeners() {
@@ -66,21 +100,50 @@ class DrawingCanvas {
         this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
 
         // Touch events for mobile and Apple Pencil
-        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
-        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
-        this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { passive: false });
+        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { 
+            passive: false,
+            capture: true 
+        });
+        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { 
+            passive: false,
+            capture: true 
+        });
+        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { 
+            passive: false,
+            capture: true 
+        });
+        this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { 
+            passive: false,
+            capture: true 
+        });
 
-        // Pointer events for better stylus support
+        // Pointer events for better stylus support (Apple Pencil priority)
         if (window.PointerEvent) {
-            this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-            this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
-            this.canvas.addEventListener('pointerup', this.handlePointerEnd.bind(this));
-            this.canvas.addEventListener('pointercancel', this.handlePointerEnd.bind(this));
+            this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this), {
+                capture: true
+            });
+            this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this), {
+                capture: true
+            });
+            this.canvas.addEventListener('pointerup', this.handlePointerEnd.bind(this), {
+                capture: true
+            });
+            this.canvas.addEventListener('pointercancel', this.handlePointerEnd.bind(this), {
+                capture: true
+            });
         }
 
         // Prevent context menu on right click
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        
+        // Additional mobile optimizations
+        this.canvas.addEventListener('selectstart', (e) => e.preventDefault());
+        this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
+        
+        // Prevent iOS Safari double-tap zoom on canvas
+        this.canvas.addEventListener('gesturestart', (e) => e.preventDefault());
+        this.canvas.addEventListener('gesturechange', (e) => e.preventDefault());
+        this.canvas.addEventListener('gestureend', (e) => e.preventDefault());
     }
 
     // Mouse Events
@@ -117,31 +180,45 @@ class DrawingCanvas {
 
     // Touch Events (Apple Pencil and finger)
     handleTouchStart(e) {
+        // Prevent default behavior and page scrolling
         e.preventDefault();
+        e.stopPropagation();
+        
+        // Prevent page scrolling during drawing
+        document.body.classList.add('drawing-active');
         
         if (e.touches.length === 1) {
             const touch = e.touches[0];
             const rect = this.canvas.getBoundingClientRect();
+            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
             
             this.isDrawing = true;
-            this.lastX = touch.clientX - rect.left;
-            this.lastY = touch.clientY - rect.top;
+            // Account for scroll offset on mobile
+            this.lastX = touch.clientX - rect.left - scrollX;
+            this.lastY = touch.clientY - rect.top - scrollY;
             
-            // Use force for pressure sensitivity if available
+            // Use force for pressure sensitivity if available (Apple Pencil)
             const pressure = touch.force || 0.5;
             this.beginStroke(this.lastX, this.lastY, pressure);
         }
     }
 
     handleTouchMove(e) {
+        // Prevent default behavior and page scrolling
         e.preventDefault();
+        e.stopPropagation();
         
         if (!this.isDrawing || e.touches.length !== 1) return;
         
         const touch = e.touches[0];
         const rect = this.canvas.getBoundingClientRect();
-        const currentX = touch.clientX - rect.left;
-        const currentY = touch.clientY - rect.top;
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Account for scroll offset on mobile
+        const currentX = touch.clientX - rect.left - scrollX;
+        const currentY = touch.clientY - rect.top - scrollY;
         const pressure = touch.force || 0.5;
         
         this.drawLine(this.lastX, this.lastY, currentX, currentY, pressure);
@@ -151,7 +228,12 @@ class DrawingCanvas {
     }
 
     handleTouchEnd(e) {
+        // Prevent default behavior
         e.preventDefault();
+        e.stopPropagation();
+        
+        // Re-enable page scrolling
+        document.body.classList.remove('drawing-active');
         
         if (this.isDrawing) {
             this.isDrawing = false;
@@ -164,15 +246,33 @@ class DrawingCanvas {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         
         e.preventDefault();
-        this.canvas.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+        
+        // Prevent page scrolling during drawing
+        document.body.classList.add('drawing-active');
+        
+        // Set pointer capture for better tracking
+        if (this.canvas.setPointerCapture) {
+            this.canvas.setPointerCapture(e.pointerId);
+        }
         
         const rect = this.canvas.getBoundingClientRect();
-        this.isDrawing = true;
-        this.lastX = e.clientX - rect.left;
-        this.lastY = e.clientY - rect.top;
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
         
-        // Use pressure for Apple Pencil
-        const pressure = e.pressure || 0.5;
+        this.isDrawing = true;
+        // Account for scroll offset
+        this.lastX = e.clientX - rect.left - scrollX;
+        this.lastY = e.clientY - rect.top - scrollY;
+        
+        // Use pressure for Apple Pencil (better pressure detection)
+        let pressure = 0.5;
+        if (e.pressure !== undefined && e.pressure > 0) {
+            pressure = e.pressure;
+        } else if (e.force !== undefined && e.force > 0) {
+            pressure = e.force;
+        }
+        
         this.beginStroke(this.lastX, this.lastY, pressure);
     }
 
@@ -180,10 +280,23 @@ class DrawingCanvas {
         if (!this.isDrawing) return;
         
         e.preventDefault();
+        e.stopPropagation();
+        
         const rect = this.canvas.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
-        const pressure = e.pressure || 0.5;
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Account for scroll offset
+        const currentX = e.clientX - rect.left - scrollX;
+        const currentY = e.clientY - rect.top - scrollY;
+        
+        // Better pressure detection
+        let pressure = 0.5;
+        if (e.pressure !== undefined && e.pressure > 0) {
+            pressure = e.pressure;
+        } else if (e.force !== undefined && e.force > 0) {
+            pressure = e.force;
+        }
         
         this.drawLine(this.lastX, this.lastY, currentX, currentY, pressure);
         
@@ -194,7 +307,15 @@ class DrawingCanvas {
     handlePointerEnd(e) {
         if (this.isDrawing) {
             e.preventDefault();
-            this.canvas.releasePointerCapture(e.pointerId);
+            e.stopPropagation();
+            
+            // Re-enable page scrolling
+            document.body.classList.remove('drawing-active');
+            
+            if (this.canvas.releasePointerCapture) {
+                this.canvas.releasePointerCapture(e.pointerId);
+            }
+            
             this.isDrawing = false;
             this.endStroke();
         }
