@@ -32,12 +32,20 @@ class DrawingCanvas {
         const rect = this.canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        // Ensure minimum canvas size
+        const width = Math.max(rect.width, 300);
+        const height = Math.max(rect.height, 200);
         
-        this.ctx.scale(dpr, dpr);
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
+        this.canvas.width = width * dpr;
+        this.canvas.height = height * dpr;
+        
+        // Only scale if canvas has valid dimensions
+        if (this.canvas.width > 0 && this.canvas.height > 0) {
+            this.ctx.scale(dpr, dpr);
+        }
+        
+        this.canvas.style.width = width + 'px';
+        this.canvas.style.height = height + 'px';
         
         // Set drawing properties
         this.ctx.lineCap = 'round';
@@ -263,22 +271,32 @@ class DrawingCanvas {
 
     // History Management
     saveState() {
+        // Check if canvas has valid dimensions
+        if (this.canvas.width === 0 || this.canvas.height === 0) {
+            console.warn('Canvas has invalid dimensions, skipping save state');
+            return;
+        }
+        
         // Remove any history beyond current index
         this.history = this.history.slice(0, this.historyIndex + 1);
         
-        // Save current canvas state
-        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.history.push({
-            imageData: imageData,
-            drawings: JSON.parse(JSON.stringify(this.drawings))
-        });
-        
-        this.historyIndex++;
-        
-        // Limit history size
-        if (this.history.length > 20) {
-            this.history.shift();
-            this.historyIndex--;
+        try {
+            // Save current canvas state
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            this.history.push({
+                imageData: imageData,
+                drawings: JSON.parse(JSON.stringify(this.drawings))
+            });
+            
+            this.historyIndex++;
+            
+            // Limit history size
+            if (this.history.length > 20) {
+                this.history.shift();
+                this.historyIndex--;
+            }
+        } catch (error) {
+            console.error('Failed to save canvas state:', error);
         }
     }
 
@@ -306,7 +324,9 @@ class DrawingCanvas {
     }
 
     clear() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (this.canvas.width > 0 && this.canvas.height > 0) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
         this.drawings = [];
         this.saveState();
         this.options.onDrawingChange(this.drawings);
@@ -321,14 +341,19 @@ class DrawingCanvas {
     }
 
     redrawCanvas() {
+        if (this.canvas.width === 0 || this.canvas.height === 0) {
+            console.warn('Canvas has invalid dimensions, skipping redraw');
+            return;
+        }
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         this.drawings.forEach(stroke => {
-            if (stroke.points.length === 0) return;
+            if (!stroke.points || stroke.points.length === 0) return;
             
             this.ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
-            this.ctx.strokeStyle = stroke.color;
-            this.ctx.lineWidth = stroke.size;
+            this.ctx.strokeStyle = stroke.color || '#000000';
+            this.ctx.lineWidth = stroke.size || 3;
             
             this.ctx.beginPath();
             this.ctx.moveTo(stroke.points[0].x, stroke.points[0].y);

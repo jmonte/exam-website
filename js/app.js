@@ -284,23 +284,37 @@ class ExamApp {
             </div>
         `;
         
-        // Initialize canvas for current page
+        // Wait for the image to load and page to be rendered
+        const img = pageWrapper.querySelector('.page-image');
         const canvas = document.getElementById('drawingCanvas');
-        this.canvas = new DrawingCanvas(canvas, {
-            tool: this.currentTool,
-            color: this.currentColor,
-            brushSize: this.brushSize,
-            onDrawingChange: (drawingData) => {
-                currentPage.drawings = drawingData;
-            }
-        });
         
-        // Restore previous drawings
-        if (currentPage.drawings.length > 0) {
-            this.canvas.loadDrawings(currentPage.drawings);
+        const initializeCanvas = () => {
+            // Ensure the canvas has proper dimensions
+            setTimeout(() => {
+                this.canvas = new DrawingCanvas(canvas, {
+                    tool: this.currentTool,
+                    color: this.currentColor,
+                    brushSize: this.brushSize,
+                    onDrawingChange: (drawingData) => {
+                        currentPage.drawings = drawingData;
+                    }
+                });
+                
+                // Restore previous drawings
+                if (currentPage.drawings && currentPage.drawings.length > 0) {
+                    this.canvas.loadDrawings(currentPage.drawings);
+                }
+                
+                this.updateCanvasCursor();
+            }, 100);
+        };
+
+        if (img.complete) {
+            initializeCanvas();
+        } else {
+            img.addEventListener('load', initializeCanvas);
+            img.addEventListener('error', initializeCanvas); // Still initialize even if image fails to load
         }
-        
-        this.updateCanvasCursor();
     }
 
     // Keyboard Shortcuts
