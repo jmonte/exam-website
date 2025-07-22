@@ -15,6 +15,23 @@ class ExamApp {
     init() {
         this.setupEventListeners();
         this.updateUI();
+        
+        // Set initial brush size display
+        const sizeDisplay = document.getElementById('sizeDisplay');
+        if (sizeDisplay) {
+            sizeDisplay.textContent = `${this.brushSize}px`;
+        }
+        
+        // Set initial active states
+        const initialColorBtn = document.querySelector(`[data-color="${this.currentColor}"]`);
+        if (initialColorBtn) {
+            initialColorBtn.classList.add('active');
+        }
+        
+        const initialToolBtn = document.querySelector(`[data-tool="${this.currentTool}"]`);
+        if (initialToolBtn) {
+            initialToolBtn.classList.add('active');
+        }
     }
 
     setupEventListeners() {
@@ -57,6 +74,7 @@ class ExamApp {
         // Brush size
         const brushSize = document.getElementById('brushSize');
         brushSize.addEventListener('input', (e) => this.setBrushSize(e.target.value));
+        brushSize.addEventListener('change', (e) => this.setBrushSize(e.target.value));
         
         // Action buttons
         document.getElementById('undoBtn').addEventListener('click', () => this.undo());
@@ -198,6 +216,12 @@ class ExamApp {
         this.currentTool = tool;
         document.querySelectorAll('[data-tool]').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+        
+        // Update canvas tool if it exists
+        if (this.canvas) {
+            this.canvas.setTool(tool);
+        }
+        
         this.updateCanvasCursor();
     }
 
@@ -205,11 +229,21 @@ class ExamApp {
         this.currentColor = color;
         document.querySelectorAll('[data-color]').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-color="${color}"]`).classList.add('active');
+        
+        // Update canvas color if it exists
+        if (this.canvas) {
+            this.canvas.setColor(color);
+        }
     }
 
     setBrushSize(size) {
         this.brushSize = parseInt(size);
         document.getElementById('sizeDisplay').textContent = `${size}px`;
+        
+        // Update canvas brush size if it exists
+        if (this.canvas) {
+            this.canvas.setBrushSize(parseInt(size));
+        }
     }
 
     updateCanvasCursor() {
@@ -304,6 +338,11 @@ class ExamApp {
                 if (currentPage.drawings && currentPage.drawings.length > 0) {
                     this.canvas.loadDrawings(currentPage.drawings);
                 }
+                
+                // Ensure canvas has current tool settings
+                this.canvas.setTool(this.currentTool);
+                this.canvas.setColor(this.currentColor);
+                this.canvas.setBrushSize(this.brushSize);
                 
                 this.updateCanvasCursor();
             }, 100);

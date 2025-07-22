@@ -331,6 +331,8 @@ class DrawingCanvas {
         };
         
         this.ctx.globalCompositeOperation = this.options.tool === 'eraser' ? 'destination-out' : 'source-over';
+        this.ctx.strokeStyle = this.options.tool === 'eraser' ? '#000000' : this.options.color;
+        this.ctx.lineWidth = this.options.brushSize;
         this.ctx.beginPath();
         this.ctx.moveTo(x, y);
     }
@@ -344,8 +346,12 @@ class DrawingCanvas {
         const baseBrushSize = this.options.brushSize;
         const dynamicSize = baseBrushSize * (0.5 + pressure * 0.5);
         
+        // Set drawing properties for each line segment
+        this.ctx.globalCompositeOperation = this.options.tool === 'eraser' ? 'destination-out' : 'source-over';
         this.ctx.lineWidth = dynamicSize;
         this.ctx.strokeStyle = this.options.tool === 'eraser' ? '#000000' : this.options.color;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
         
         this.ctx.lineTo(toX, toY);
         this.ctx.stroke();
@@ -387,7 +393,7 @@ class DrawingCanvas {
     }
 
     setBrushSize(size) {
-        this.options.brushSize = size;
+        this.options.brushSize = parseInt(size);
     }
 
     // History Management
