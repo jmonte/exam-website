@@ -159,6 +159,23 @@ body.fullscreen-mode .nav-controls {
     gap: 8px;
 }
 
+/* Mobile button adjustments */
+@media (max-width: 768px) {
+    .btn {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        gap: 4px;
+    }
+}
+
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -282,6 +299,23 @@ body.fullscreen-mode .nav-controls {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-color: transparent;
+}
+
+/* Mobile tool buttons */
+@media (max-width: 768px) {
+    .tool-btn {
+        padding: 10px 14px;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tool-btn {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        font-size: 0.85rem;
+    }
 }
 
 /* Color Palette */
@@ -439,6 +473,9 @@ body.fullscreen-mode .nav-controls {
     transition: all 0.3s ease;
     font-weight: 500;
     backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .nav-btn:hover:not(:disabled) {
@@ -453,6 +490,63 @@ body.fullscreen-mode .nav-controls {
     cursor: not-allowed;
 }
 
+.nav-icon {
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.nav-text {
+    font-size: 0.9rem;
+}
+
+/* Mobile navigation buttons */
+@media (max-width: 768px) {
+    .nav-btn {
+        padding: 12px 20px;
+        border-radius: 8px;
+        gap: 6px;
+    }
+    
+    .nav-icon {
+        font-size: 1.3rem;
+    }
+    
+    .nav-text {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-btn {
+        padding: 10px 16px;
+        gap: 4px;
+    }
+    
+    .nav-icon {
+        font-size: 1.2rem;
+    }
+    
+    .nav-text {
+        font-size: 0.8rem;
+    }
+}
+
+/* Fullscreen navigation - show only icons */
+body.fullscreen-mode .nav-text {
+    display: none;
+}
+
+body.fullscreen-mode .nav-btn {
+    padding: 12px;
+    min-width: 48px;
+    justify-content: center;
+}
+
+body.fullscreen-mode .nav-icon {
+    font-size: 1.8rem;
+}
+
 .page-indicator {
     background: rgba(255, 255, 255, 0.9);
     padding: 12px 20px;
@@ -460,6 +554,31 @@ body.fullscreen-mode .nav-controls {
     font-weight: 500;
     color: #4a5568;
     backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+}
+
+/* Mobile page indicator */
+@media (max-width: 768px) {
+    .page-indicator {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        border-radius: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-indicator {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        border-radius: 16px;
+    }
+}
+
+/* Fullscreen page indicator */
+body.fullscreen-mode .page-indicator {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.9rem;
 }
 
 /* Add Page Button */
@@ -487,11 +606,35 @@ body.fullscreen-mode .nav-controls {
     box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
 }
 
+/* Mobile add page button */
+@media (max-width: 768px) {
+    .add-page-btn {
+        width: 50px;
+        height: 50px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .add-page-btn {
+        width: 45px;
+        height: 45px;
+        bottom: 15px;
+        right: 15px;
+        font-size: 1.2rem;
+    }
+}
+
 /* Fullscreen add button positioning */
 body.fullscreen-mode .add-page-btn {
     bottom: 100px;
     right: 20px;
     z-index: 997;
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
 }
 
 /* Fullscreen exit hint */
@@ -578,7 +721,12 @@ body.fullscreen-mode .fullscreen-hint {
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
+    }
+    
+    .header-controls .btn {
+        min-width: auto;
+        white-space: nowrap;
     }
     
     .color-palette {
